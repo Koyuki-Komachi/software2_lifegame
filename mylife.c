@@ -3,6 +3,9 @@
 #include <unistd.h> // sleep()関数を使う
 #include "gol.h"
 
+#define height 40
+#define width 70
+
 void my_init_cells(const int height, const int width, int cell[height][width], FILE* fp) {
     if (fp == NULL){
         cell[30][20] = 1;
@@ -25,22 +28,60 @@ void my_init_cells(const int height, const int width, int cell[height][width], F
 void my_print_cells(FILE* fp, int gen, const int height, const int width, int cell[height][width]) {
     printf("generation = %d\n", gen);
     cell[0][0] = '+';
-    cell[0][69] = '+';
-    cell[39][0] = '+';
-    cell[39][69] = '+';
-    for (int i = 1; i < 69; ++i) {
+    cell[0][width - 1] = '+';
+    cell[height - 1][0] = '+';
+    cell[height - 1][width - 1] = '+';
+    for (int i = 1; i < width - 1; ++i) {
         cell[0][i] = '-';
-        cell[39][i] = '-';
+        cell[height - 1][i] = '-';
     }
-    for (int j = 1; j < 39; ++j) {
+    for (int j = 1; j < height; ++j) {
         cell[j][0] = '|';
-        cell[j][69] = '|';    
+        cell[j][width - 1] = '|';    
     }
-    for (int k = 0; k < 40; ++k) {
-        for (int l = 0; l < 70; ++l) {
+    for (int k = 0; k < width; ++k) {
+        for (int l = 0; l < height; ++l) {
             printf("%c ", cell[k][l]);
         }
         printf("\n");
+    }
+}
+int* my_update_individual(int k, int l, const int height, const int width, int cell[height][width]) {
+    typedef struct another_cell {
+        int copy_cell[3][4];
+    } Another;
+    if (cell[k][l] == 1) {
+        int count = 0;
+        for (int m = k - 1; m <= k + 1; ++m) {
+            for (int n = l - 1; n <= l + 1; ++n) {
+                if (cell[m][n] == 1) {
+                    count++;
+                }
+            }
+        }
+        if (count != 3 && count != 4) {
+            another_cell[k][l] = 0;
+        }
+    }else if (cell[k][l] == 0) {
+        int count = 0;
+        for (int m = k - 1; m <= k + 1; ++m) {
+            for (int n = l - 1; n <= l + 1; ++n) {
+                if (cell[m][n] == 1) {
+                    count++;
+                }
+            }
+        }
+        if (count == 3) {
+            another_cell[k][l] = 1;
+        }
+    }
+}
+
+void my_update_cells(const int height, const int width, int cell[height][width]) {
+    for (int k = 0; k < height; ++k) {
+        for (int l = 0; l < width; ++l) {
+            my_update_individual(k, l, height, width, cell[height][width], int copy_cell[height][width])
+        }
     }
 }
 
