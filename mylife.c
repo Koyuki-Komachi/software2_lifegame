@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h> // sleep()関数を使う
-#include "gol.h"
+//#include "gol.h"
 
 #define height 40
 #define width 70
 
-void my_init_cells(const int height, const int width, int cell[height][width], FILE* fp) {
+void my_init_cells(int cell[height][width], FILE* fp) {
     if (fp == NULL){
         cell[30][20] = 1;
         cell[30][22] = 1;
@@ -25,7 +25,7 @@ void my_init_cells(const int height, const int width, int cell[height][width], F
         }
 }
 
-void my_print_cells(FILE* fp, int gen, const int height, const int width, int cell[height][width]) {
+void my_print_cells(FILE* fp, int gen, int cell[height][width]) {
     printf("generation = %d\n", gen);
     cell[0][0] = '+';
     cell[0][width - 1] = '+';
@@ -46,10 +46,8 @@ void my_print_cells(FILE* fp, int gen, const int height, const int width, int ce
         printf("\n");
     }
 }
-int* my_update_individual(int k, int l, const int height, const int width, int cell[height][width]) {
-    typedef struct another_cell {
-        int copy_cell[3][4];
-    } Another;
+
+void my_update_individual(int k, int l, int cell[height][width], int copy_cell[height][width]) {
     if (cell[k][l] == 1) {
         int count = 0;
         for (int m = k - 1; m <= k + 1; ++m) {
@@ -60,7 +58,9 @@ int* my_update_individual(int k, int l, const int height, const int width, int c
             }
         }
         if (count != 3 && count != 4) {
-            another_cell[k][l] = 0;
+            copy_cell[k][l] = 0;
+        }else {
+            copy_cell[k][l] = 1; 
         }
     }else if (cell[k][l] == 0) {
         int count = 0;
@@ -72,15 +72,23 @@ int* my_update_individual(int k, int l, const int height, const int width, int c
             }
         }
         if (count == 3) {
-            another_cell[k][l] = 1;
+            copy_cell[k][l] = 1;
+        }else {
+            copy_cell[k][l] = 0;
         }
     }
 }
 
-void my_update_cells(const int height, const int width, int cell[height][width]) {
+void my_update_cells(int cell[height][width]) {
+    int copy_cell[height][width] = {0};
     for (int k = 0; k < height; ++k) {
         for (int l = 0; l < width; ++l) {
-            my_update_individual(k, l, height, width, cell[height][width], int copy_cell[height][width])
+            my_update_individual(k, l, cell, copy_cell);
+        }
+    }
+    for (int k = 0; k < height; ++k) {
+        for (int l = 0; l < width; ++l) {
+            cell[k][l] = copy_cell[k][l];
         }
     }
 }
@@ -88,8 +96,6 @@ void my_update_cells(const int height, const int width, int cell[height][width])
 
 int main(int argc, char **argv) {
     FILE *fp = stdout;
-    const int height = 40;
-    const int width = 70;
     
     int cell[height][width];
     for(int y = 0 ; y < height ; y++){
@@ -106,7 +112,7 @@ int main(int argc, char **argv) {
     else if (argc == 2) {
         FILE *lgfile;
         if ( (lgfile = fopen(argv[1],"r")) != NULL ) {
-            my_init_cells(height,width,cell,lgfile); // ファイルによる初期化
+            my_init_cells(cell,lgfile); // ファイルによる初期化
         }
         else{
             fprintf(stderr,"cannot open file %s\n",argv[1]);
@@ -115,17 +121,17 @@ int main(int argc, char **argv) {
         fclose(lgfile);
     }
     else{
-        my_init_cells(height, width, cell, NULL); // デフォルトの初期値を使う
+        my_init_cells(cell, NULL); // デフォルトの初期値を使う
     }
     
-    my_print_cells(fp, 0, height, width, cell); // 表示する
+    my_print_cells(fp, 0, cell); // 表示する
     sleep(1); // 1秒休止
     fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
     
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
-        update_cells(height, width, cell); // セルを更新
-        my_print_cells(fp, gen, height, width, cell);  // 表示する
+        my_update_cells(cell); // セルを更新
+        my_print_cells(fp, gen, cell);  // 表示する
         sleep(1); //1秒休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
     }
